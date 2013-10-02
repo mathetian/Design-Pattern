@@ -1,0 +1,363 @@
+<head>
+	<title>Design Pattern 1 of 3</title>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+</head>
+<body>
+	<h1>Creational Desing Patterns</h1>
+	What are creational desing patterns?
+
+	In software engineering, creational patterns are design patterns that <span style="color:red
+	">deal with object creation mechanisms </span> and are used in situations <span style="color:red
+	">when basic form of object creation</span> could result in design problems or increase complexity of a code base.
+
+	<h2>Abstract Factory</h2>
+	The abstract factory pattern is a design pattern that allows for the creation of groups of related objects <span style="color:red
+	">without the requirement of specifying </span> the exact concrete classes that will be used.
+
+	The relationship in AF is hard to understand and is very complexity. I don't why people will use it. Hard to use it.
+
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <vector>
+	using namespace std;
+
+	class AP{
+	public:
+		AP(){cout<<"ap"<<endl;};
+		virtual ~ AP(){cout<<"del ap"<<endl;}
+	};
+	//product1
+	class AP1: public AP{
+	public:
+		AP1(){cout<<"ap1"<<endl;};
+		virtual ~ AP1(){cout<<"del ap1"<<endl;};
+	};
+
+	class CP1A : public AP1{
+	public:
+		CP1A(){cout<<"ap1a"<<endl;};
+		virtual ~ CP1A(){cout<<"del ap1a"<<endl;};
+	};
+
+	class CP1B : public AP1{
+	public:
+		CP1B(){cout<<"ap1b"<<endl;};
+		virtual ~ CP1B(){cout<<"del ap1b"<<endl;};
+	};
+	//product2
+	class AP2: public AP{
+	public:
+		AP2(){cout<<"ap2"<<endl;};
+		virtual ~ AP2(){cout<<"del ap2"<<endl;};
+	};
+
+	class CP2A : public AP2{
+	public:
+		CP2A(){cout<<"ap2a"<<endl;};
+		virtual ~ CP2A(){cout<<"del ap2a"<<endl;};
+	};
+
+	class CP2B : public AP2{
+	public:
+		CP2B(){cout<<"ap2b"<<endl;};
+		virtual ~ CP2B(){cout<<"del ap2b"<<endl;};
+	};
+
+	//Abstract Factory
+	class AF{
+	public:
+		AF(){cout<<"af"<<endl;};
+		virtual ~AF(){cout<<"del af"<<endl;};
+		//core
+		virtual AP*creatCP1(){};
+		virtual AP*creatCP2(){};
+	};
+
+	class CFA : public AF{
+	public:
+		CFA(){cout<<"cfa"<<endl;};
+		virtual ~ CFA(){cout<<"del cfa"<<endl;};
+		//core
+		virtual AP*creatCP1(){return new CP1A();}
+		virtual AP*creatCP2(){return new CP2A();}
+	};
+
+	class CFB : public AF{
+	public:
+		CFB(){cout<<"cfb"<<endl;};
+		virtual ~ CFB(){cout<<"del cfb"<<endl;};
+		//core
+		virtual AP*creatCP1(){return new CP1B();}
+		virtual AP*creatCP2(){return new CP2B();}
+	};
+
+	int main()
+	{
+		//factory
+		AF*cfa=new CFA();
+		AF*cfb=new CFB();
+		typedef vector<AP*> _v_ap_typ;
+		_v_ap_typ v;			
+		v.push_back(cfa->creatCP1());
+		v.push_back(cfa->creatCP2());
+		v.push_back(cfb->creatCP1());
+		v.push_back(cfb->creatCP2());
+
+		 for ( _v_ap_typ::iterator it = v.begin(); it != v.end(); ++it)
+	        delete *it;
+	    v.clear();
+
+	    delete cfa;
+	    cfa=NULL;
+
+	    delete cfb;
+	    cfb=NULL;
+	    return 0;
+	}
+	[/sourcecode]
+
+	Hard to understand it. We need <span style="color:red
+	">Real World Example</span> to explain it. For it, you can refer <a href="http://www.codeproject.com/Articles/430590/Design-Patterns-1-of-3-Creational-Design-Patterns">Here</a>.
+
+	<h2>Builder</h2>
+	The builder pattern is a design pattern that allows for the step-by-step creation of complex objects using the correct sequence of actions. The construction is <span style="color:red
+	">controlled by</span> a <span style="color:red
+	">director object</span> that only needs to know the type of object it is to create.
+
+	 This pattern is used when complex object that need to be created is constructed by constituent parts that must by created in the same order or by using a specific algorithm.
+
+	 This patthern is easy to undertstand.
+	 [sourcecode language="c"]
+	#include <iostream>
+	#include <vector>
+	#include <string>
+	using namespace std;
+	//product
+	class VStr{
+	public:
+		void getStrs()
+		{
+			/* for(string::iterator it = vecStr.begin(); it != vecStr.end(); ++it)
+			 	cout<<*it<<" ";
+			 cout<<endl;*/
+			 for(int i=0;i<vecStr.size();i++)
+			 	cout<<vecStr[i]<<" ";
+			 cout<<endl;
+		}	
+		void add(string str)
+		{
+			vecStr.push_back(str);
+		}
+	private:
+		vector<string>vecStr;
+	};
+
+	//Builder
+	class Converter{
+	public:
+		Converter(){cout<<"Converter"<<endl;};
+		virtual ~ Converter(){cout<<"delete Converter"<<endl;};
+		virtual void process(string str){cout<<"Converter process"<<endl;};
+		virtual void getProduct(){};
+	};
+	//ConcreteBuilder
+	class ASCIIConverter:public Converter{
+	public:
+		ASCIIConverter(){cout<<"ASCIIConverter"<<endl;};
+		virtual ~ ASCIIConverter(){cout<<"delete ASCIIConverter"<<endl;};
+		virtual void process(string str){cout<<"ASCIIConverter process"<<endl;vv.add(str);};
+		virtual void getProduct(){vv.getStrs();};
+	private:
+		VStr vv;
+	};
+	class TexConverter:public Converter{
+	public:
+		TexConverter(){cout<<"TexConverter"<<endl;};
+		virtual ~ TexConverter(){cout<<"delete TexConverter"<<endl;};
+		virtual void process(string str){cout<<"TexConverter process"<<endl;vv.add(str);};
+		virtual void getProduct(){vv.getStrs();};
+	private:
+		VStr vv;
+	};
+	//Director
+	class Reader{
+	public:
+		Reader(Converter*cv):cv(cv){cout<<"Reader"<<endl;};
+		virtual ~ Reader(){cout<<"delete Reader"<<endl;};
+		void digest(string str){cout<<"begin Reader"<<endl;cv->process(str);cv->process(str);cv->process(str);};
+	private:
+		Converter*cv;
+	};
+	//In this example, I emit product.
+	int main()
+	{
+		Converter*acv=new ASCIIConverter();
+		Converter*tcv=new TexConverter();
+		Reader reader1(acv);
+		Reader reader2(tcv);
+		reader1.digest("hello");
+		reader2.digest("world");
+		acv->getProduct();
+		tcv->getProduct();
+		delete acv;
+		delete tcv;
+	}
+	 [/sourcecode]
+
+	 I think the example given by the href above is better than my example, as my example doesn't include any products. I guess something was wrong as both demos given by book and webiste are differecnt our. The product should in the builder.
+
+	<h2>Factory method</h2>
+	Allows for the creation of objects <span>without specifying the type of object that is to be created in code</span>. A factory class contains a method that allows determination of the created type at run-time.
+
+	看了一眼啥也没看出来。感觉怎么就是利用virtual的东西。没意思的东西。
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class Product{
+	public:
+		Product(){std::cout<<"Product"<<std::endl;}
+		virtual ~ Product(){}
+	};
+
+	class ConcreteProductA:public Product{
+	public:
+		ConcreteProductA(){std::cout<<"ConcreteProductA"<<std::endl;}
+		virtual ~ ConcreteProductA(){}
+	};
+
+	class ConcreteProductB:public Product{
+	public:
+		ConcreteProductB(){std::cout<<"ConcreteProductB"<<std::endl;}
+		virtual ~ ConcreteProductB(){}
+	};
+
+	class FactoryBase{
+	public:
+		FactoryBase(){std::cout<<"FactoryBase"<<std::endl;}
+		virtual ~ FactoryBase(){}
+		virtual Product* createProduct(int id){}
+	};
+
+	class ConcreteFactory:public FactoryBase{
+	public:
+		ConcreteFactory(){std::cout<<"ConcreteFactory"<<std::endl;}
+		virtual ~ ConcreteFactory(){}
+		virtual Product* createProduct(int id)
+		{
+			if(id==0)
+				return new ConcreteProductA();
+			return new ConcreteProductB;
+		}
+	};
+
+	int main()
+	{
+		FactoryBase*cf=new ConcreteFactory;
+		Product* a=cf->createProduct(0);
+		Product* b=cf->createProduct(1);
+		delete cf;cf=0;
+		delete a;delete b;
+		a=0;b=0;
+		return 0;
+	}
+	[/sourcecode]
+
+	<h2>Prototype</h2>
+	The prototype design pattern is a design pattern that is used to instantiate a class by copying, or cloning, the properties of an existing object. The new object is an exact copy of the prototype but permits modification without altering the original.
+
+	这个pattern说白了就是指implement a clone function。有什么用了，确实还是有用的，比方现在给了你一个object, 已知的是这个object是某个class的子类的实例化。如果要clone一个，不就是用clone吗？具体的话，可以用绘画板的例子来说明。
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class Prototype{
+	public:
+		Prototype(int num):num(num){}
+		virtual ~ Prototype(){}
+		virtual Prototype*clone()=0;
+		void print(){std::cout<<num<<std::endl;}
+	protected:
+		int num;
+	};
+
+	class CP1:public Prototype{
+	public:
+		CP1(int num):Prototype(num){}
+		virtual ~ CP1(){}
+		virtual Prototype*clone()
+		{
+			return new CP1(num--);
+		}
+	};
+
+	class CP2:public Prototype{
+	public:
+		CP2(int num):Prototype(num){}
+		virtual ~ CP2(){}
+		virtual Prototype*clone()
+		{
+			return new CP2(num--);
+		}
+	};
+
+	int main()
+	{
+		Prototype*a=new CP1(1);
+		Prototype*b=new CP2(10);
+		Prototype*c=a->clone();
+		Prototype*d=b->clone();
+		a->print();b->print();
+		c->print();d->print();
+		delete a;delete b;delete c;delete d;
+	}	
+	[/sourcecode]
+
+	<h2>Singleton</h2>
+	这是最常见，最常问到，使用最广的一类pattern。当然自己到现在还是写不出无错的code的。记住要使用static。
+
+	The singleton pattern is a design pattern that is used to ensure that a class can only have one concurrent instance. Whenever additional objects of a singleton class are required, the previously created, single instance is provided.
+
+	A global variable makes an object accessible, but it doesn't keep you from instantiating multiple objects. 
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class Singleton{
+	public:
+		//private static readonly object _lockThis = new object();
+		static Singleton*getInstance(){
+			if(!_instance)
+			{
+				//lock (_lockThis)
+	             {
+	             	//if (_instance == null)
+	             	_instance=new Singleton;
+	             }
+			}
+				
+			return _instance;
+		}
+	 	~ Singleton(){};
+
+		void getAddress()
+		{
+			std::cout<<this<<std::endl;
+		}
+
+	private:
+		Singleton(){};
+		static Singleton*_instance;
+	};
+
+	Singleton* Singleton::_instance = NULL;
+
+
+	int main()
+	{
+		Singleton*a=Singleton::getInstance();
+		a->getAddress();
+		Singleton*b=Singleton::getInstance();
+		b->getAddress();
+		delete a;a=b=0;
+	}
+	[/sourcecode]
+
+</body>

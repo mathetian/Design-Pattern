@@ -1,0 +1,393 @@
+<head>
+	<title>Design Pattern 2 of 3</title>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+</head>
+<body>
+	<h1>Structural Design Patterns</h1>
+	In software engineering, structural design patterns are design patterns that ease the design by identifying a simple way to realize relationships between entities.
+
+	<h2>Adapter pattern</h2>
+	The adapter pattern is a design pattern that is used to allow two incompatible types to communicate.
+
+	<ul>
+		<li>Client</li>
+		<li>ITarget</li>
+		<li>Adapter(extends from ITarget)</li>
+		<li>Adaptee(communicate with it)</li>
+	</ul>
+
+	I don't know why can't commuicate with each other directly. 实在是没看出这个东西和前面的create pattern有啥区别。
+
+	Sometimes an implementation can have two or more different implementations.
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class Adaptee{
+	public:
+		void methodB()
+		{
+			std::cout<<"Adaptee methodB"<<std::endl;
+		}
+	};
+
+	class ITarget{
+	public:
+		virtual void method(){};
+		virtual ~ ITarget(){};
+	};
+
+	class Client{
+	public:
+		Client(ITarget*target):target(target){};
+		virtual ~ Client(){}
+		void Request()
+		{
+			std::cout<<"Request"<<std::endl;
+			target->method();
+		}
+	private:
+		ITarget*target;
+	};
+
+	class Adapter:public ITarget{
+	public:
+		virtual void method()
+		{
+			std::cout<<"Adapter method"<<std::endl;
+		}
+		virtual ~ Adapter(){delete ad;ad=NULL;}
+		Adapter(){ad=new Adaptee;}
+	private:
+		Adaptee*ad;
+	};	
+
+	int main()
+	{
+		Client*client=new Client(new Adapter());
+		client->Request();
+		delete client;
+		return 0;
+	}
+	[/sourcecode]
+
+	<h2>Bridge</h2>
+	 In this case it is more suitable to use Bridge pattern and separate abstraction from its implementation.  If we don’t use this pattern, we will find that implementation details are included within an abstraction. On of the biggest benefits of Bridge pattern is ability to change implementation details at run time. 
+
+	Inheritance binds an implementation to the abstraction permanently, which makes it difficult to modify, extend, and reuse abstractions and
+	implementations independently.
+
+	Bridge模式的基本思路是拆分具体的abstract和Implement。也就是书上提到的platform-dependence之类的东西。
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <string>
+
+	class Sender{
+	public:
+		Sender(){}
+		virtual ~ Sender(){std::cout<<"delete Sender"<<std::endl;}
+		virtual void sendMessage(std::string text)
+		{
+			std::cout<<"Sender\\"+text<<std::endl;
+		}
+	};
+
+	class Message{
+	public:
+		Message(Sender*sender):sender(sender){}
+		virtual ~ Message()
+		{
+			delete sender;
+			sender=0;
+			std::cout<<"delete Message"<<std::endl;
+		}
+		virtual void send(std::string str)
+		{
+			sender->sendMessage("general\\"+str);
+		}
+	protected:
+		Sender*sender;
+	};
+
+	class UrlMessage:public Message{
+	public:
+		UrlMessage(Sender*sender):Message(sender){}
+		virtual ~ UrlMessage()
+		{
+			std::cout<<"delete UrlMessage"<<std::endl;
+		}
+		virtual void send(std::string str)
+		{
+			sender->sendMessage("Url\\"+str);
+		}
+	};
+
+	class EmailSender:public Sender{
+	public:
+		EmailSender(){};
+		virtual ~ EmailSender(){std::cout<<"delete EmailSender"<<std::endl;}
+		virtual void sendMessage(std::string text)
+		{
+			std::cout<<"EmailSender\\"+text<<std::endl;
+		}
+	};
+
+	int main()
+	{
+		Message*msg=new Message(new EmailSender());
+		Message*msg1=new UrlMessage(new Sender());
+		msg->send("msg");
+		msg1->send("msg1");
+		delete msg;delete msg1;
+		return 0;
+	}
+	[/sourcecode]
+	<h2>Composite pattern</h2>
+	It is used when creating hierarchical object models. The pattern defines a manner in which to design recursive tree structures of objects, where individual objects and groups can be accessed in the same manner.
+
+	The composite pattern is a design pattern that is used when creating hierarchical object models. The pattern defines a manner in which to design recursive tree structures of objects, where individual objects and groups can be accessed in the same manner.
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <list>
+
+	//write a simple tree
+	//Some problems for delete tree
+	class NodeBase{
+	public:
+		NodeBase(int value):value(value){}
+		virtual ~ NodeBase(){}
+		virtual void show(int depth){};
+		virtual void add(NodeBase*n){};
+	protected:
+		int value;
+	};
+
+	class Node:public NodeBase{
+	public:
+		Node(int value):NodeBase(value){}
+		virtual ~ Node()
+		{
+			for (std::list<NodeBase*>::iterator it = _iLists.begin(); it != _iLists.end(); it++)
+			{
+				//delete it;
+				//it=NULL;
+			}
+		}
+		virtual void show(int depth)
+		{
+			std::cout<<value<<"\\"<<depth<<": ";
+			for (std::list<NodeBase*>::iterator it = _iLists.begin(); it != _iLists.end(); it++)
+			{
+				(*it)->show(depth+1);
+			}
+		}
+		virtual void add(NodeBase*n)
+		{
+			_iLists.push_back(n);
+		}
+	private:
+		std::list<NodeBase*> _iLists;
+	};
+
+	int main()
+	{
+		NodeBase*root=new Node(10);
+		root->add(new Node(15));
+		root->add(new Node(3));
+		NodeBase*here=new Node(12);
+		here->add(new Node(112));
+		here->add(new Node(23));
+		root->add(here);
+		root->show(0);
+		return 0;
+	}
+	[/sourcecode]
+	
+	<h2>Decorator pattern</h2>
+	极其重要的一类设计模式。
+	The decorator pattern is a design pattern that extends the functionality of individual objects by <span>wrapping them with</span> one or more decorator classes. These decorators can modify existing members and add new methods and properties at run-time.
+
+	This pattern allows you to create a multiple decorators that can be stacked on the top of each other, each time adding a new functionality to the overriden method.
+
+	初步看了一下网上的资料，觉得和上面的前面的某个所谓的模式没啥区别。
+	Several issues should be considered when applying the Decorator pattern:
+	<ul>
+		<li>Interface conformance.</li>
+		<li>Omitting the abstract Decorator class.</li>
+		<li>Keeping Component classes lightweight.</li>
+		<li>Changing the skin of an object versus changing its guts.</li>
+	</ul>
+
+	Most patterns are same to each other.
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <string>
+
+	class SandWich{
+	public:
+		virtual ~ SandWich(){}
+		virtual int getPrice()=0;
+		virtual std::string getDescription()=0;
+	};
+
+	class TunaSandwich:public SandWich{
+	public:
+		virtual ~ TunaSandwich(){}
+		virtual int getPrice()
+		{
+			return 1;
+		}
+		virtual std::string getDescription()
+		{
+			return "TunaSandwich";
+		}
+	};
+
+	class VeggieSandwich:public SandWich{
+	public:
+		virtual ~ VeggieSandwich(){};
+		virtual int getPrice()
+		{
+			return 10;
+		}
+		virtual std::string getDescription()
+		{
+			return "VeggieSandwich";
+		}
+	};
+
+	class SandWichDectorBase : public SandWich{
+	public:
+		SandWichDectorBase(SandWich*sw):sandwich(sw){}
+		virtual ~ SandWichDectorBase(){}
+		virtual int getPrice()
+		{
+			return sandwich->getPrice();
+		}
+		virtual std::string getDescription()
+		{
+			return sandwich->getDescription();
+		}
+	private:
+		SandWich*sandwich;
+	};
+
+	class Corn: public SandWichDectorBase{
+	public:
+		Corn(SandWich*sw):SandWichDectorBase(sw){}
+		virtual ~ Corn(){}
+		virtual int getPrice()
+		{
+			return SandWichDectorBase::getPrice()+2;
+		}
+		virtual std::string getDescription()
+		{
+			return "Corn\\"+SandWichDectorBase::getDescription();
+		}
+	};
+
+	class Olives: public SandWichDectorBase{
+	public:
+		Olives(SandWich*sw):SandWichDectorBase(sw){}
+		virtual ~ Olives(){}
+		virtual int getPrice()
+		{
+			return SandWichDectorBase::getPrice()+3;
+		}
+		virtual std::string getDescription()
+		{
+			return "Olives\\"+SandWichDectorBase::getDescription();
+		}
+	};
+
+	int main()
+	{
+		SandWich*sw=new TunaSandwich();
+		std::cout<<sw->getPrice()<<":"<<sw->getDescription()<<std::endl;
+		SandWich*cornSw=new Corn(sw);
+		std::cout<<cornSw->getPrice()<<":"<<sw->getDescription()<<std::endl;
+		delete sw;delete cornSw;
+		sw=NULL;cornSw=NULL;
+		return 0;
+	}
+	[/sourcecode]
+
+	<h2>Facade pattern</h2>
+	The facade class provides a simple, single-class interface that hides the implementation details of the underlying code.
+
+	The facade pattern is a design pattern that is used to simplify access to functionality in complex or poorly designed subsystems. 
+
+	感觉所谓的Facade Pattern其实就是提供的一个封装。具体例子可以参考电视机和电视机的工作原理。
+
+	A common design goal is to minimize the communication and dependencies between subsystems. One way to achieve this goal is to introduce a facade object that provides a single, simplified interface to the more general facilities of a subsystem.
+
+	<span style="color:red">这一个部分的代码就不给了，最后整理的时候如果需要可以再写</span>
+
+	<h2>Flyweight pattern</h2>
+	The flyweight pattern is a design pattern that is used to minimize resource usage when working with very large numbers of objects. When creating many thousands of identical objects, stateless flyweights can lower the memory used to a manageable level.
+
+	A flyweight is an object that minimizes memory use by sharing as much data as possible with other similar objects.
+
+	没看出这个模式的意义在哪里。
+
+	<span style="color:red">这一个部分的代码也不给了（因为正如上面讲到过，没啥意思），最后整理的时候如果需要可以再写</span>
+
+	<h2>Proxy pattern</h2>
+	名字足以让人驻足。
+
+	Proxy can be used when we don’t want to access to the resource or subject directly because of some base of permissions or if we don’t want to expose all of the methods of subject class. Using proxies is very helpful when we need to access resources which are hard to instantiate, are slow to execute or are resource sensitive.
+
+	例子给的太复杂了。
+
+	Here are several common situations in which the Proxy pattern is applicable:
+	<ul>
+		<li>A remote proxy provides a local representative for an object in a different address space.</li>
+		<li>A virtual proxy creates expensive objects on demand.</li>
+		<li>A protection proxy controls access to the original object.</li>
+		<li>A smart reference is a replacement for a bare pointer that performs additional actions when an object is accessed.</li>
+	</ul>
+
+	<ul>
+		<li>SubjectBase</li>
+		<li>RealSubject</li>
+		<li>Proxy</li>
+	</ul>
+	看了一下书上的例子似乎理解的要清楚一点. 感觉网站上的那个real example不是很好.
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class SubjectBase{
+	public:
+		virtual void dealWithIt()=0;
+	};
+
+	class RealSubject:public SubjectBase{
+	public:
+		virtual void dealWithIt()
+		{
+			std::cout<<"RealSubject dealWithIt"<<std::endl;
+		}
+	};
+
+	class Proxy:public SubjectBase{
+	public:
+		virtual void dealWithIt()
+		{
+			if(_rs==NULL)
+				_rs=new RealSubject();
+			std::cout<<"Proxy dealWithIt"<<std::endl;
+			_rs->dealWithIt();
+		}
+	private:
+		RealSubject*_rs;
+	};
+
+	int main()
+	{
+		Proxy*pxy=new Proxy();
+		pxy->dealWithIt();
+		delete pxy;
+		pxy=NULL;
+		return 0;
+	}
+	[/sourcecode]
+</body>

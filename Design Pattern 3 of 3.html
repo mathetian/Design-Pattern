@@ -1,0 +1,952 @@
+<head>
+	<title>Design Pattern 2 of 3</title>
+	<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=utf-8">
+</head>
+<body>
+<h1>Behavioral</h1>
+	到了一个新的话题了，These patterns characterize complex control flow that's difficult to follow at run-time. They shift your focus away from flow of control to let you concentrate <span style="color:red">just on</span> the way objects are interconnected.
+
+	A behavioral pattern explains how objects interact. It describes how different objects and classes send messages to each other to make things happen and how the steps of a task are divided among different objects.
+
+	个人感觉这个部分主要就是you belong to me & me belong to you. 在CTP中就有这个东东.
+
+<h2>Chain of Responsibility</h2>
+	The chain of responsibility pattern is a design pattern that defines a linked list of handlers, each of which is able to process requests. 
+
+	其实就是一个event_proxy_handler。有点类似于前段时间遇到过的话务员问题。
+	[sourcecode language="c"]
+	#include <iostream>
+
+	//Not very good example
+	class HandlerBase{
+	public:
+		HandlerBase(){};
+		virtual ~ HandlerBase(){};
+		virtual void setNext(HandlerBase*next)
+		{
+			_next=next;
+		}
+		virtual void HandlerMsg(int level)=0;
+	protected:
+		HandlerBase*_next;
+	};
+
+	class ConcreteHandlerA:public HandlerBase{
+	public:
+		ConcreteHandlerA(){};
+		virtual ~ ConcreteHandlerA(){};
+		virtual void HandlerMsg(int level)
+		{
+			if(level==1)
+				std::cout<<"ConcreteHandlerA handler"<<std::endl;
+			else _next->HandlerMsg(level);
+		}
+	};
+
+	class ConcreteHandlerB:public HandlerBase{
+	public:
+		ConcreteHandlerB(){};
+		virtual ~ ConcreteHandlerB(){};
+		virtual void HandlerMsg(int level)
+		{
+			if(level==2)
+				std::cout<<"ConcreteHandlerB handler"<<std::endl;
+			else _next->HandlerMsg(level);
+		}
+	};
+
+	class ConcreteHandlerC:public HandlerBase{
+	public:
+		ConcreteHandlerC(){};
+		virtual ~ ConcreteHandlerC(){}
+		virtual void HandlerMsg(int level)
+		{
+			if(level==3)
+				std::cout<<"ConcreteHandlerC handler"<<std::endl;
+			else _next->HandlerMsg(level);
+		}
+	};
+
+	int main()
+	{
+		HandlerBase*a=new ConcreteHandlerA();
+		HandlerBase*b=new ConcreteHandlerB();
+		HandlerBase*c=new ConcreteHandlerC();
+		a->setNext(b);b->setNext(c);
+		a->HandlerMsg(1);
+		a->HandlerMsg(2);
+		a->HandlerMsg(3);
+		delete a;delete b;delete c;
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Command</h2>
+	The command pattern is a design pattern that enables all of the information for a request to be contained within a single object. 
+
+	Four elements in it,
+	<ul>
+		<li>Client: main</li>
+		<li>Receiver: Robot</li>
+		<li>CommandBase: It holds information about the receiver.</li>
+		<li>ConcreteCommand</li>
+		<li>Invoker: controller</li>
+	</ul>
+
+	Use the Command pattern when you want to:
+	<ul>
+		<li>parameterize objects by an action to perform</li>
+		<li>specify, queue, and execute requests at different times.</li>
+		<li>support undo</li>
+		<li>support logging changes so that they can be reapplied in case of a system crash.</li>
+		<li>structure a system around high-level operations built on primitives operations.</li>
+	</ul>
+
+	<span style="color:red">这个部分完全不知道怎么理解. The relationship between objects is hard to understand.</span>
+
+	命令（Command）模式属于对象的行为模式。命令模式又称为行动（Action）模式或交易（Transaction）模式。命令模式把一个请求或者操作封装到一个对象中。命令模式允许系统使用不同的请求把客户端参数化，对请求排队或者记录请求日志，可以提供命令的撤销和恢复功能。
+
+	命令模式是对命令的封装。命令模式把发出命令的责任和执行命令的责任分割开，委派给不同的对象。
+
+	每一个命令都是一个操作：请求的一方发出请求要求执行一个操作；接收的一方收到请求，并执行操作。命令模式允许请求的一方和接收的一方独立开来，使得请求的一方不必知道接收请求的一方的接口，更不必知道请求是怎么被接收，以及操作是否被执行、何时被执行，以及是怎么被执行的。
+
+	<span style="color:red">callback function, that is, a function that's registered somewhere to be called at a later point.</span>
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <vector>
+	//Like the example of website
+	class Robot{
+	public:
+		Robot(){position=0;}
+		~ Robot(){}
+		void moveLeft(int flag)
+		{
+			if(flag==1) position-=1;
+			else position+=1;
+			if(flag==1)
+				std::cout<<"excute LeftMovement:"<<position<<std::endl;
+			else
+				std::cout<<"undo LeftMovement:"<<position<<std::endl;
+		}
+		void moveRight(int flag)
+		{
+			if(flag==1) position+=1;
+			else position-=1;
+			if(flag==1)
+				std::cout<<"excute RightMovement:"<<position<<std::endl;
+			else
+				std::cout<<"undo RightMovement:"<<position<<std::endl;
+		}
+	private:
+		int position;
+	};
+
+	class Movement{
+	public:
+		Movement(Robot*robot):robot(robot){}
+		virtual ~ Movement(){}
+		virtual void excute(int flag)=0;
+	public:
+		Robot*robot;
+	};
+
+	class Controller{
+	public:
+		void excute(Movement*a)
+		{
+			vCommands.push_back(a);
+			a->excute(1);
+		}
+		void undo()
+		{
+			
+			Movement*cur=vCommands[vCommands.size()-1];
+			cur->excute(0);
+			vCommands.pop_back();
+		}
+	private:
+		std::vector<Movement*>vCommands;
+	};
+
+
+
+	class LeftMovement:public Movement{
+	public:
+		LeftMovement(Robot*robot):Movement(robot){}
+		virtual ~ LeftMovement(){}
+		virtual void excute(int flag)
+		{
+			robot->moveLeft(flag);
+		}
+	};
+
+	class RightMovement:public Movement{
+	public:
+		RightMovement(Robot*robot):Movement(robot){}
+		virtual ~ RightMovement(){}
+		virtual void excute(int flag)
+		{
+			robot->moveRight(flag);
+		}
+	};
+
+	int main()
+	{
+		Robot*robot=new Robot();
+		Movement*a=new LeftMovement(robot);
+		Movement*b=new RightMovement(robot);
+		Movement*c=new LeftMovement(robot);
+		Movement*d=new RightMovement(robot);
+		Controller*ctl=new Controller();
+		ctl->excute(a);ctl->excute(c);
+		ctl->excute(d);ctl->excute(b);
+		
+		ctl->undo();
+		ctl->undo();
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Interpreter</h2>
+	The interpreter pattern is a design pattern that is useful when developing domain-specific languages or notations. The pattern allows the grammar for such a notation to be represented in an object-oriented fashion that can easily be extended(What is it?).
+
+	The Interpreter pattern is very similar to the Composite pattern. Like leaf and son.
+
+	The interpreter pattern can solve string match(regex problem)?
+
+	Elements:
+	<ul>
+		<li>AbstractExpression</li>
+		<li>TerminalExpression</li>
+		<li>NonterminalExpression</li>
+		<li>Context</li>
+		<li>Client</li>
+	</ul>
+
+	The real world example in <a href="http://www.codeproject.com/Articles/455228/Design-Patterns-3-of-3-Behavioral-Design-Patterns">website</a> is very good.
+
+	[sourcecode language="c"]
+	//One Algorithm question: interpreter for, + - + - - 2 3 4 + - -5 6 + -7 8 9 10
+
+	//Some thing wrong for example
+	#include <iostream>
+	#include <queue>
+	#include <string>
+
+	class Expression{
+	public:
+		Expression(){}
+		virtual int Excute()=0;
+	};
+
+	class TerminalExpresion:public Expression{
+	public:
+		TerminalExpresion(int value):value(value){}
+		virtual int Excute()
+		{
+			std::cout<<value<<std::endl;
+			return value;
+		}
+	private:
+		int value;
+	};
+
+	class AddExpresion:public Expression{
+	public:
+		AddExpresion(Expression*_l,Expression*_r):_l(_l),_r(_r){}
+		virtual int Excute()
+		{
+			std::cout<<"plus"<<std::endl;
+			return _l->Excute()+_r->Excute();
+		}
+	private:
+		Expression*_l;
+		Expression*_r;
+	};
+
+	class MinusExpresion:public Expression{
+	public:
+		MinusExpresion(Expression*_l,Expression*_r):_l(_l),_r(_r){}
+		virtual int Excute(){
+			std::cout<<"minus"<<std::endl;
+			return _l->Excute()-_r->Excute();
+		}
+	private:
+		Expression*_l;
+		Expression*_r;
+	};
+
+
+	class MultiplyExpression:public Expression{
+	public:
+		MultiplyExpression(Expression*_l,Expression*_r):_l(_l),_r(_r){}
+		virtual int Excute()
+		{
+			return _l->Excute()*_r->Excute();
+		}
+	private:
+		Expression*_l;
+		Expression*_r;
+	};
+
+	class DivideExpression:public Expression{
+	public:
+		DivideExpression(Expression*_l,Expression*_r):_l(_l),_r(_r){}
+		virtual int Excute()
+		{
+			return _l->Excute()/_r->Excute();
+		}
+	private:
+		Expression*_l;
+		Expression*_r;
+	};
+
+	class Parser{
+	public:
+		Expression*parse(std::queue<char>&str)
+		{
+			if(str.empty()) return NULL;
+			while(isspace(str.front())) str.pop();
+			if(str.empty()) return NULL;
+			if(isDigital(str.front())==1)
+				return new TerminalExpresion(getValue(str));
+			parseOP(str);
+		}
+
+		Expression*parseOP(std::queue<char>&str)
+		{
+			if(str.empty()) return NULL;
+			while(isspace(str.front())) str.pop();
+			if(str.empty()) return NULL;
+
+			switch(str.front())
+			{
+			case '+':
+				str.pop();
+				return new AddExpresion(parse(str),parse(str));
+			case '-':
+				str.pop();
+				return new MinusExpresion(parse(str),parse(str));
+			case '*':
+				str.pop();
+				return new MultiplyExpression(parse(str),parse(str));
+			case '/':
+				str.pop();
+				return new DivideExpression(parse(str),parse(str));
+			}
+		}
+
+		Expression*parse(std::string strs)
+		{
+			int len=strs.size();
+			int i=0;std::queue<char>str;
+			while(i<len)
+			{
+				str.push(strs[i]);
+				i++;
+			}
+			return parse(str);
+		}
+	private:
+		int getValue(std::queue<char>&str)
+		{
+			int value=0;
+			while(!str.empty()&&!isspace(str.front()))
+			{
+				value=value*10+str.front()-'0';
+				str.pop();
+			}
+			return value;
+		}
+
+		int isDigital(char flag)
+		{
+			if(flag>='0'&&flag<='9')
+				return 1;
+			return 0;
+		}
+	};
+
+	int main()
+	{
+		Parser*p=new Parser();
+		Expression*exp=p->parse("+ - 4 5 6");
+		std::cout<<exp->Excute()<<std::endl;
+		return 0;
+	}
+	[/sourcecode]
+
+	<span style="color:red">I have look for the example in the book. A very similar example of previous. Many technologies are very good.</span>
+
+<h2>Iterator</h2>
+	Provides a means for the elements of an aggregate object to be accessed sequentially <span style="color:red">without knowledge of its structure</span>. This allows traversing of lists, trees and other structures in a standard manner.
+
+	The main intent of the iterator pattern is to provide a simple interface for traversing a collection of items. 
+
+	The iterator object will maintain the state of the iteration, keeping track of the current item and having a way of identifying what elements are next to be iterated.
+
+	Just like Iterator. <span style="color:red">The implement of iterator</span>. Some design principle in book are very good.
+
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <vector>
+
+	template<class Item> class Iterator;
+
+	template<class Item>
+	class List{
+	public:
+		void add(Item item)
+		{
+			itemVec.push_back(item);
+		}
+
+		Iterator<Item>*begin()
+		{
+			return new Iterator<Item>(this);
+		}
+		int getSize()
+		{
+			return itemVec.size();
+		}
+		Item getElem(int index)
+		{
+			if(itemVec.size()<=index)
+				return Item(0);
+			return itemVec.at(index);
+		}
+	private:
+		std::vector<Item>itemVec;
+	};
+
+	template<class Item>
+	class Iterator{
+	public:
+		Iterator(){index=-1;}
+		Iterator(List<Item>*pList):pList(pList){index=-1;}
+		virtual ~ Iterator(){}
+		Item Next()
+		{
+			index++;
+			return pList->getElem(index);
+		}
+		Item Empty()
+		{
+			return pList->getElem(0);
+		}
+	private:
+		List<Item>*pList;
+		int index;
+	};
+
+	int main()
+	{
+		List<int> iLists;
+		iLists.add(8);iLists.add(2);
+		iLists.add(3);iLists.add(5);
+		iLists.add(4);iLists.add(6);
+		Iterator<int>*iterator=iLists.begin();
+		while(1)
+		{
+			int elem=iterator->Next();
+			if(elem==0) break;
+			std::cout<<elem<<std::endl;
+		}
+	}
+	[/sourcecode]
+
+	 <span style="color:red">正如strcpy一样，实现的细节值得深入思考.</span>
+
+<h2>Mediator</h2>
+	Instead, mediator objects are used to encapsulate and centralize the interactions between classes.
+
+	Very strange, can build a very beautiful system. Like p2p system.
+
+	<span style="color:red">有几个例子可以理解这个模式，飞机调度系统以及excel中数据变化，barchat就会对应的有所变化</span>
+
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <vector>
+
+	class MediatorBase;
+
+	class ColleagueBase{
+	public:
+		virtual void change(){};
+		virtual void notify(std::string str){};
+		ColleagueBase(MediatorBase*mb);
+	protected:
+		MediatorBase*mb;
+	};
+
+	class MediatorBase{
+	public:
+		MediatorBase(){}
+		void add(ColleagueBase*cb)
+		{
+			pcList.push_back(cb);
+		}
+		void notify(std::string str,ColleagueBase*cb)
+		{
+			for(int i=0;i<pcList.size();i++)
+			{
+				if(pcList[i]==cb) continue;
+				pcList[i]->notify("MediatorBase");
+			}
+		}
+	private:
+		std::vector<ColleagueBase*> pcList;
+	};
+
+	ColleagueBase::ColleagueBase(MediatorBase*mb)
+	{
+		this->mb=mb;
+		this->mb->add(this);
+	}	
+
+	class CCA:public ColleagueBase{
+	public:
+		CCA(MediatorBase*mb):ColleagueBase(mb){}
+		virtual void change()
+		{
+			std::cout<<"CCA changed"<<std::endl;
+			mb->notify("CCA",this);
+		}
+		virtual void notify(std::string str)
+		{
+			std::cout<<str<<" CCA notified"<<std::endl;
+		}
+	};
+
+	class CCB:public ColleagueBase{
+	public:
+		CCB(MediatorBase*mb):ColleagueBase(mb){}
+		virtual void change()
+		{
+			std::cout<<"CCB changed"<<std::endl;
+			mb->notify("CCB",this);
+		}
+		virtual void notify(std::string str)
+		{
+			std::cout<<str<<" CCB notified"<<std::endl;
+		}
+	};
+
+	class CCC:public ColleagueBase{
+	public:
+		CCC(MediatorBase*mb):ColleagueBase(mb){}
+		virtual void change()
+		{
+			std::cout<<"CCC changed"<<std::endl;
+			mb->notify("CCC",this);
+		}
+		virtual void notify(std::string str)
+		{
+			std::cout<<str<<" CCC notified"<<std::endl;
+		}
+	};
+
+
+
+	int main()
+	{
+		MediatorBase*mb=new MediatorBase();
+		ColleagueBase*a=new CCA(mb);ColleagueBase*b=new CCB(mb);
+		ColleagueBase*c=new CCC(mb);
+
+		ColleagueBase*d=new CCA(mb);ColleagueBase*e=new CCB(mb);
+		ColleagueBase*f=new CCC(mb);
+
+		b->change();
+
+		delete mb;delete a,b,c,d,e,f;
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Memento</h2>
+	It is sometimes necessary to capture the internal state of an object at some point in time and have the ability to restore that state later at run time. 
+
+	This is the right place where you can use the memento pattern. 
+
+	This pattern is used to provide an application the undo functionality. Sometimes it is called undo with rollback.
+
+	Undo, Redo.
+
+	<span style="color:red">和前面的一个redo,undo的例子(哪个?)有些相似的地方.</span>
+	[sourcode language="c"]
+	#include <iostream>
+
+	class Element{
+	public:
+		Element(int a,int b):a(a),b(b){}
+		int ga(){return a;}
+		int gb(){return b;}
+	private:
+		int a,b;
+	};
+
+	class Memento{
+	public:
+		Memento(Element e):e(e){}
+		int ga(){return e.ga();}
+		int gb(){return e.gb();}
+	private:
+		Element e;
+	};
+
+
+	class Originator{
+	public:
+		Originator(){_a=0;_b=0;}
+		void add()
+		{
+			std::cout<<_a<<" "<<_b<<std::endl;
+			_a++;
+		}
+		Memento*createMO()
+		{
+			Element e(_a,_b);
+			return new Memento(e);
+		}
+		void set(Memento*mo)
+		{
+			_a=mo->ga();
+			_b=mo->gb();
+		}
+	private:
+		int _a,_b;
+	};
+
+
+	class Caretaker{
+	public:
+		Caretaker(Memento*mo):mo(mo){}
+		Memento*getMemento(){return mo;}
+		~ Caretaker(){delete mo; mo=NULL;}
+	private:
+		Memento*mo;
+	};
+
+	int main()
+	{
+		Originator*or1=new Originator();
+		or1->add();or1->add();
+		Caretaker*cr=new Caretaker(or1->createMO());
+		or1->add();or1->add();
+		or1->set(cr->getMemento());
+		or1->add();
+		or1->set(cr->getMemento());
+		or1->add();
+		delete or1;delete cr;
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Observer</h2>
+	Defines a link between objects so that when one object's state changes, all dependent objects are updated automatically.
+
+	It allows you to monitor and publish changes of a single object called subject. 
+
+	When a change occurs other objects called observers can be automatically notified by calling one of their methods.
+
+	Let me give an example, for excel, when you change the content of the grid, the bar chart will change automotify. How to implement it? That can be called <span style="color:red">publish-subscribe</span> pattern.
+
+	<span style="color:red">与前面的差异不大就不写了.</span>
+
+<h2>State</h2>
+	It allows an object to completely change its behavior depending upon its current internal state.
+
+	By substituting classes within a defined context, the state object appears to change its type at run-time.
+
+	Two examples. TCPState and DVDState. Change State, the behavior will change.
+
+	Use the State pattern in either of the following cases:
+	<ul>
+		<li>Behavior depends on its state</li>
+		<li>Operations have large, multipart conditional statements that depend on the
+			object's state. 
+		</li>
+	</ul>
+	[sourcecode language="c"]
+	//Memory Leak
+	#include <iostream>
+
+	class StateBase;
+
+	class Context{
+	public:
+		Context(StateBase*sb):_sb(sb){}
+		void Request();
+		void setState(StateBase*sb){_sb=sb;}
+	private:
+		StateBase*_sb;
+	};
+
+	class StateBase{
+	public:
+		virtual void Handler(Context*ctx)=0;
+	};
+
+	class SC:public StateBase{
+	public:
+		virtual void Handler(Context*ctx);
+	};
+
+	class SB:public StateBase{
+	public:
+		virtual void Handler(Context*ctx);
+	};
+
+	class SA:public StateBase{
+	public:
+		virtual void Handler(Context*ctx);
+	};
+
+	void Context::Request()
+	{
+		_sb->Handler(this);
+	}
+
+	void SA::Handler(Context*ctx)
+	{
+		std::cout<<"SA Handler"<<std::endl;
+		ctx->setState(new SB());
+	}
+
+	void SB::Handler(Context*ctx)
+	{
+		std::cout<<"SB Handler"<<std::endl;
+		ctx->setState(new SC());
+	}
+
+	void SC::Handler(Context*ctx)
+	{
+		std::cout<<"SC Handler"<<std::endl;
+		ctx->setState(new SA());
+	}
+
+	int main()
+	{
+		Context*ctx=new Context(new SA());
+		ctx->Request();
+		ctx->Request();
+		ctx->Request();
+		ctx->Request();
+
+		delete ctx;
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Strategy</h2>
+	It allows a set of similar algorithms to be defined and encapsulated in their own classes. 
+
+	The algorithm to be used for a particular purpose may then be selected at run-time according to your requirements.
+
+	<span style="color:red">A very simple pattern.</span>
+
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class StrategyBase{
+	public:
+		virtual void call()=0;
+	};
+
+	class Client{
+	public:
+		void setStrategy(StrategyBase*sb){_sb=sb;}
+		void call(){_sb->call();}
+	private:
+		StrategyBase*_sb;
+	};
+
+	class CSA:public StrategyBase{
+	public:
+		virtual void call()
+		{
+			std::cout<<"CSA called"<<std::endl;
+		}
+	};
+
+	class CSB:public StrategyBase{
+	public:
+		virtual void call()
+		{
+			std::cout<<"CSB called"<<std::endl;
+		}
+	};
+
+	class CSC:public StrategyBase{
+	public:
+		virtual void call()
+		{
+			std::cout<<"CSC called"<<std::endl;
+		}
+	};
+
+	int main()
+	{
+		Client*cl=new Client();
+		cl->setStrategy(new CSA());
+		cl->call();
+		cl->setStrategy(new CSB());
+		cl->call();
+		cl->setStrategy(new CSC());
+		cl->call();
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Template</h2>
+	It allows a group of interchangeable, similarly structured, multi-step algorithms to be defined. 
+
+	Each algorithm follows the same series of actions but provides a different implementation of the steps.
+	[sourcecode language="c"]
+	#include <iostream>
+
+	class AlgorithmBase{
+	public:
+		virtual void excute()
+		{
+			step1();
+			step2();
+		}
+		virtual void step1()=0;
+		virtual void step2()=0;
+	};
+
+	class ConcreteAlgorithmA:public AlgorithmBase{
+	public:
+		virtual void step1()
+		{
+			std::cout<<"ConcreteAlgorithmA step1"<<std::endl;
+		}
+		virtual void step2()
+		{
+			std::cout<<"ConcreteAlgorithmA step2"<<std::endl;
+		}
+	};
+
+	class ConcreteAlgorithmB:public AlgorithmBase{
+	public:
+		virtual void step1()
+		{
+			std::cout<<"ConcreteAlgorithmB step1"<<std::endl;
+		}
+		virtual void step2()
+		{
+			std::cout<<"ConcreteAlgorithmB step2"<<std::endl;
+		}
+	};
+
+	int main()
+	{
+		AlgorithmBase*ab=new ConcreteAlgorithmA();
+		ab->excute();
+		delete ab;ab=NULL;
+		ab=new ConcreteAlgorithmB();
+		ab->excute();
+		delete ab;ab=NULL;
+		return 0;
+	}
+	[/sourcecode]
+
+<h2>Visitor</h2>
+	The last pattern in this blog.
+
+	That separates a set of structured data from the functionality that may be performed upon it. 
+
+	This promotes loose coupling and enables additional operations to be added without modifying the data classes. Another benefit is the ability to add a new visitor without modifying the existing structure.
+
+	<ul>
+		<li>Client</li>
+		<li>ObjectStructure</li>
+		<li>ElementBase, ConcreteElement</li>
+		<li>VisitorBase, ConcreteVisitor</li>
+	</ul>
+
+	Use the Visitor pattern when,
+	<ul>
+		<li>an object structure contains many classes of objects with different interfaces, and you want to perform operations on these objects that depend on their concrete classes.</li>
+		<li>many distinct and unrelated operations need to be performed on objects in an object structure.</li>
+		<li>the classes defining the object structure rarely change, but you often want to define new operations over the structure.</li>
+	</ul>
+
+	<span style="color:red">这个部分比较的难，最后一个难点一定要攻克.</span>
+	[sourcecode language="c"]
+	#include <iostream>
+	#include <vector>
+
+	class ElementBase;
+
+	class VisitorBase{
+	public:
+		virtual void visit(ElementBase*eb)=0;
+	};
+
+	class ElementBase{
+	public:
+		virtual void visit(VisitorBase*cv)
+		{
+			cv->visit(this);
+		}
+		virtual std::string getName()=0;
+	};
+
+
+	class ObjectStructure{
+	public:
+		virtual void add(ElementBase*eb)
+		{
+			vElements.push_back(eb);
+		}
+
+		virtual void visit(VisitorBase*cv)
+		{
+			for(int i=0;i<vElements.size();i++)
+				vElements[i]->visit(cv);
+		}
+	private:
+		std::vector<ElementBase*> vElements;
+	};
+
+	class CEA:public ElementBase{
+	public:
+		virtual std::string getName()
+		{
+			return "CEA";
+		}
+	};
+
+	class CEB:public ElementBase{
+	public:
+		virtual std::string getName()
+		{
+			return "CEB";
+		}
+	};
+
+
+
+	class ConcreteVisitor:public VisitorBase{
+	public:
+		virtual void visit(ElementBase*eb)
+		{
+			std::cout<<eb->getName()<<std::endl;
+		}
+	};
+
+	int main()
+	{
+		ObjectStructure*obs=new ObjectStructure();
+		obs->add(new CEA());
+		obs->add(new CEA());
+		obs->add(new CEB());
+		obs->add(new CEB());
+		obs->visit(new ConcreteVisitor());
+		return 0;
+	}
+	[/sourcecode]
+</body>
