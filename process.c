@@ -11,11 +11,16 @@
 typedef unsigned long long int GF2n[length];
 typedef unsigned long long u64_int;
 
+typedef struct{
+	GF2n*f;
+	int num;
+}FUNCTION;
+
 int getFlagPos(const char*str,char flag)
 {
 	int len=strlen(str);
-	for(int i=0;i<len;i++)
-		if(str[i]==flag)
+	for(int i=0;i<len;i++) 
+		if(str[i]==flag) 
 			return i;
 	return -1;
 }
@@ -32,10 +37,9 @@ char *trimwhitespace(char *str)
   return str;
 }
 
-char** str_split(char* a_str)
+char** str_split(char* a_str,int &count)
 {
     char** result    = 0;
-    size_t count     = 0;
     char* tmp        = a_str;
     char* last_comma = 0;
 
@@ -69,26 +73,42 @@ char** str_split(char* a_str)
         assert(idx == count - 1);
         *(result + idx) = 0;
     }
-
+    count--;
     return result;
+}
+
+u64_int convertHexToDecLen8(const char*str)
+{
+	int len=strlen(str);
+	u64_int a1=0,a2=0;
+	if(len<=4) 
+		a1=strtol(str,NULL,16);
+	else
+	{
+		char tmp1[1000];memset(tmp1,0,1000);
+		strncpy(tmp1,str,len-4);
+		a2=strtol(tmp1,NULL,16);
+		a1=strtol(str+len-4,NULL,16);
+	}		
+	u64_int tmp2=1;tmp2<<=16;
+	a1=a2*tmp2+a1;
+	return a1;
 }
 
 u64_int convertHexToDecLen16(const char*str)
 {
-	printf("%s\n",str);
 	int len=strlen(str);
 	u64_int a1=0,a2=0;
-	if(len<=8)
+	if(len<=8) 
 		a1=atoll(str);
 	else
 	{
 		char tmp1[1000];memset(tmp1,0,1000);
 		strncpy(tmp1,str,len-8);
-		a2=atoll(tmp1);
-		a1=atoll(str+len-8);
-		printf("%llu,%llu\n",a1,a2);
+		a2=convertHexToDecLen8(tmp1);
+		a1=convertHexToDecLen8(str+len-8);
 	}		
-	u64_int tmp2=1;tmp2<<=8;
+	u64_int tmp2=1;tmp2<<=32;
 	a1=a2*tmp2+a1;
 	return a1;
 }
@@ -124,7 +144,6 @@ void getFromStrConvertHexToDec(const char*str,GF2n&value)
 		strncpy(strTmp,str+len-SX,SX);
 		value[0]=convertHexToDecLen16(strTmp);
 	}
-	//return value;
 }
 
 void getFromStr(const char*str,GF2n&value)
@@ -134,7 +153,7 @@ void getFromStr(const char*str,GF2n&value)
 	value[0]=atoll(str);
 }
 
-void GFread(FILE *file,GF2n&m, GF2n**f, GF2n&a,GF2n&b,GF2n&Px,GF2n&Py,GF2n&n,GF2n&Qx,GF2n&Qy)
+void GFread(FILE *file,GF2n&m, FUNCTION&ff, GF2n&a,GF2n&b,GF2n&Px,GF2n&Py,GF2n&n,GF2n&Qx,GF2n&Qy)
 {
 	if(!file)
 	{
@@ -142,14 +161,13 @@ void GFread(FILE *file,GF2n&m, GF2n**f, GF2n&a,GF2n&b,GF2n&Px,GF2n&Py,GF2n&n,GF2
 		return;
 	}
 	int i=0;
-	char*input;
+	char*input=new char[1000];
 	char*left=new char[1000];
 	char*right=new char[1000];char*tmp=new char[1000];
 	size_t len = 1000;
 	while(fgets(input,1000,file))
 	{
 		input=trimwhitespace(input);
-		printf("%s\n",input);
 		int pos=getFlagPos(input,'=');
 		memset(left,0,1000);
 		memset(right,0,1000);
@@ -161,13 +179,13 @@ void GFread(FILE *file,GF2n&m, GF2n**f, GF2n&a,GF2n&b,GF2n&Px,GF2n&Py,GF2n&n,GF2
 			getFromStr(right,m);		
 		else if(!strcmp(left,"f"))
 		{
-			/*memset(tmp,0,1000);
+			memset(tmp,0,1000);
 			strncpy(tmp,right+1,strlen(right)-2);
-			char**result=str_split(tmp);
-			int len=sizeof(result);
-			*f=new GF2n[len];
+			int len=0;
+			char**result=str_split(tmp,len);
+			ff.f=(GF2n*)malloc(sizeof(GF2n)*len);ff.num=len;
 			for(int i=0;i<len;i++)
-				getFromStrConvertHexToDec(trimwhitespace(result[i]),(*f)[i]);*/
+				getFromStr(trimwhitespace(result[i]),ff.f[i]);
 		}
 		else if(!strcmp(left,"a"))
 			getFromStrConvertHexToDec(right,a);
@@ -191,17 +209,37 @@ void print(GF2n value)
 	printf("%llu,%llu,%llu\n",value[2],value[1],value[0]);
 }
 
+void printFunction(FUNCTION ff)
+{
+	printf("Function:\n");
+	for(int i=0;i<ff.num;i++)
+	{
+		printf("\t");
+		print(ff.f[i]);
+	}
+}
+
+void printValue(GF2n value,const char*str)
+{
+	printf("%s\n\t",str);
+	print(value);
+}
+
 int main()
 {
-	printf("here\n");
 	FILE*file=fopen("input.txt","r");
 	if(!file)
+	{
 		printf("can't open file\n");
+		return 1;
+	}
 	GF2n m, a, b, Px, Py, n, Qx, Qy;
-	printf("here\n");
-	GF2n**f = (GF2n**)malloc(sizeof(GF2n*) * 4);
-	printf("here\n");
-	GFread(file,m,f,a,b,Px,Py,n,Qx,Qy);
-	print(m);print(a);print(b);print(Px);print(Py);
-	print(n);print(Qx);print(Qy);
+	FUNCTION ff;
+	GFread(file,m,ff,a,b,Px,Py,n,Qx,Qy);
+	printValue(m,"m");printValue(a,"a");
+	printValue(b,"b");printValue(Px,"Px");printValue(Py,"Py");
+	printValue(n,"n");printValue(Qx,"Qx");printValue(Qy,"Qy");
+
+	printFunction(ff);
+	return 0;
 }
